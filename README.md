@@ -1,75 +1,189 @@
-# Welcome to OnSpace AI
+# 🌴 TurisCam
 
-Onspace AI empowers anyone to turn ideas into powerful AI applications in minutes—no coding required. Our free, no-code platform enables effortless creation of custom AI apps; simply describe your vision and our agentic AI handles the rest. The onspace-app, built with React Native and Expo, demonstrates this capability—integrating popular third-party libraries to deliver seamless cross-platform performance across iOS, Android, and Web environments.
-
-## Getting Started
-
-### 1. Install Dependencies
-
-```bash
-npm install
-# or
-yarn install
-```
-
-### 2. Start the Project
-
-- Start the development server (choose your platform):
-
-```bash
-npm run start         # Start Expo development server
-npm run android       # Launch Android emulator
-npm run ios           # Launch iOS simulator
-npm run web           # Start the web version
-```
-
-- Reset the project (clear cache, etc.):
-
-```bash
-npm run reset-project
-```
-
-### 3. Lint the Code
-
-```bash
-npm run lint
-```
-
-## Main Dependencies
-
-- React Native: 0.79.4
-- React: 19.0.0
-- Expo: ~53.0.12
-- Expo Router: ~5.1.0
-- Supabase: ^2.50.0
-- Other commonly used libraries:  
-  - @expo/vector-icons  
-  - react-native-paper  
-  - react-native-calendars  
-  - lottie-react-native  
-  - react-native-webview  
-  - and more
-
-For a full list of dependencies, see [package.json](./package.json).
-
-## Development Tools
-
-- TypeScript: ~5.8.3
-- ESLint: ^9.25.0
-- @babel/core: ^7.25.2
-
-## Contributing
-
-1. Fork this repository
-2. Create a new branch (`git checkout -b main`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is private ("private": true). For collaboration inquiries, please contact the author.
+Aplicación móvil desarrollada con **React Native + Expo** para explorar lugares turísticos de Ciénaga, Magdalena.
+Incluye sistema de administración, QR interactivos, audioguías y estadísticas.
 
 ---
 
-Feel free to add project screenshots, API documentation, feature descriptions, or any other information as needed.
+## 🚀 Tecnologías usadas
+
+* React Native
+* Expo
+* TypeScript
+* Supabase (Base de datos)
+* Expo Router
+* Expo FileSystem + Sharing
+* Expo Image
+* React Native Safe Area Context
+
+---
+
+## 📦 Instalación del proyecto
+
+### 1. Clonar repositorio
+
+```bash
+git clone https://github.com/Neiler30/descubre-cienaga.git
+cd descubre-cienaga
+```
+
+---
+
+### 2. Instalar dependencias
+
+```bash
+npm install
+```
+
+---
+
+### 3. Ejecutar proyecto
+
+```bash
+npx expo start
+```
+
+---
+
+## 📱 Cómo probar la app
+
+* Descargar **Expo Go** en el celular
+* Escanear el QR que aparece en la terminal
+
+---
+
+## 🔐 Variables de entorno (IMPORTANTE)
+
+Crear un archivo `.env` en la raíz del proyecto:
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=TU_URL
+EXPO_PUBLIC_SUPABASE_ANON_KEY=TU_KEY
+```
+
+---
+
+## 🧑‍💻 Panel Admin
+
+La app incluye un panel de administrador donde puedes:
+
+* Crear lugares turísticos
+* Editar información
+* Eliminar (desactivar)
+* Generar códigos QR
+* Descargar QR
+* Ver estadísticas
+
+---
+
+## 📂 Estructura del proyecto
+
+```
+/app
+/components
+/constants
+/hooks
+/services
+/template
+/assets
+```
+
+---
+
+## ⚙️ Funcionalidades principales
+
+* 📍 Lugares turísticos
+* 🧾 Descripciones y audioguía
+* 🧠 Experiencias AR (simuladas)
+* 🎯 Sistema de puntos
+* 🏷️ Etiquetas
+* 📊 Estadísticas
+* 🔑 Autenticación
+* 🛠️ Panel Admin completo
+* 📷 QR dinámicos descargables
+
+---
+
+## ⚠️ Notas importantes
+
+* En web, la descarga de QR se abre en una pestaña nueva
+* En móvil, se descarga y se puede compartir
+* `FileSystem.cacheDirectory` solo funciona en dispositivos móviles
+
+---
+
+## 🧪 Problemas comunes
+
+### ❌ "cacheDirectory es null"
+
+👉 Estás en Web → es normal
+
+### ❌ No conecta con Supabase
+
+👉 Revisa `.env`
+
+### ❌ Error al iniciar
+
+👉 Ejecuta:
+
+```bash
+npm install
+```
+
+---
+
+## 👨‍💻 Cómo contribuir
+
+1. Crear una rama:
+
+```bash
+git checkout -b nueva-funcion
+```
+
+2. Hacer cambios
+3. Subir cambios:
+
+```bash
+git add .
+git commit -m "Nueva función"
+git push origin nueva-funcion
+```
+
+---
+
+## 📌 Recomendaciones
+
+* Usar **VS Code**
+* Instalar extensión:
+
+  * ESLint
+  * Prettier
+* No subir `.env`
+
+---
+
+## 👑 Autor
+
+Proyecto desarrollado por:
+
+**Neiler**
+
+---
+
+## 💡 Futuras mejoras
+
+* Integrar AR real
+* Modo offline
+* Mapas interactivos
+* Gamificación avanzada
+* Ranking de usuarios
+
+---
+
+## 📄 Licencia
+
+desarrollado por Neyller castro.
+
+---
+
+

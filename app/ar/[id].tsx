@@ -8,7 +8,6 @@ import {
   Easing,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,27 +16,53 @@ import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme
 import { AudioGuide } from '@/components/feature/AudioGuide';
 import { useApp } from '@/hooks/useApp';
 
-const CAYO_WELCOME = require('@/assets/images/cayo-welcome.png');
-const CAYO_POINTING = require('@/assets/images/cayo-pointing.png');
 
-const CAYO_VARIANTS: Record<string, { welcome: any; pointing: any }> = {
-  history: {
-    welcome: require('@/assets/images/cayo-historia-welcome.png'),
-    pointing: require('@/assets/images/cayo-historia-pointing.png'),
-  },
-  nature: {
-    welcome: require('@/assets/images/cayo-naturaleza-welcome.png'),
-    pointing: require('@/assets/images/cayo-naturaleza-pointing.png'),
-  },
-  culture: {
-    welcome: require('@/assets/images/cayo-cultura-welcome.png'),
-    pointing: require('@/assets/images/cayo-cultura-pointing.png'),
-  },
-  legend: {
-    welcome: require('@/assets/images/cayo-leyenda-welcome.png'),
-    pointing: require('@/assets/images/cayo-leyenda-pointing.png'),
-  },
+const CAYO_EMOJIS: Record<string, { welcome: string; pointing: string }> = {
+  history: { welcome: '🏛️', pointing: '👆' },
+  nature:  { welcome: '🌿', pointing: '☝️' },
+  culture: { welcome: '🎭', pointing: '👉' },
+  legend:  { welcome: '👹', pointing: '🫵' },
 };
+
+function CayoMascot({ arType, pose, glowColor }: { arType: string; pose: MascotPose; glowColor: string }) {
+  const emojis = CAYO_EMOJIS[arType] ?? CAYO_EMOJIS.history;
+  return (
+    <View style={[mascotStyles.body, { borderColor: glowColor + '88', shadowColor: glowColor }]}>
+      <LinearGradient
+        colors={[glowColor + '44', glowColor + '11']}
+        style={mascotStyles.bodyGrad}
+      >
+        <Text style={mascotStyles.face}>🧑</Text>
+        <Text style={mascotStyles.badge}>{pose === 'pointing' ? emojis.pointing : emojis.welcome}</Text>
+        <Text style={mascotStyles.name}>Cayo</Text>
+      </LinearGradient>
+    </View>
+  );
+}
+
+const mascotStyles = StyleSheet.create({
+  body: {
+    width: 110,
+    height: 130,
+    borderRadius: Radius.xl,
+    borderWidth: 2,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  bodyGrad: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+  },
+  face: { fontSize: 52 },
+  badge: { fontSize: 26 },
+  name: { color: '#FFF', fontSize: 11, fontWeight: '700', letterSpacing: 1 },
+});
 
 const AR_EFFECTS: Record<
   string,
@@ -96,7 +121,7 @@ export default function ARScreen() {
 
   const place = places.find((item) => item.id === id);
   const arEffect = place ? AR_EFFECTS[place.arType] : AR_EFFECTS.history;
-  const currentMascot = place ? CAYO_VARIANTS[place.arType] ?? { welcome: CAYO_WELCOME, pointing: CAYO_POINTING } : { welcome: CAYO_WELCOME, pointing: CAYO_POINTING };
+  const placeArType = place?.arType || 'history';
   const earnedPoints = Number(points || 0);
   const cameFromScan = fromScan === '1';
   const wasAlreadyScanned = already === '1';
@@ -274,12 +299,7 @@ export default function ARScreen() {
                 onPress={() => advanceGuide(scriptLines.length, speechIndex, setSpeechIndex, setPose, setShowAudio)}
                 activeOpacity={0.92}
               >
-                <Image
-                  source={pose === 'pointing' ? currentMascot.pointing : currentMascot.welcome}
-                  style={pose === 'pointing' ? styles.mascotImagePointing : styles.mascotImageWelcome}
-                  contentFit="contain"
-                  transition={160}
-                />
+                <CayoMascot arType={placeArType} pose={pose} glowColor={arEffect.glow} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.mascotPrompt}
@@ -320,7 +340,11 @@ export default function ARScreen() {
 
         {showInfo && (
           <View style={styles.subtitlePanel}>
-            <Image source={currentMascot.welcome} style={styles.subtitleAvatar} contentFit="contain" transition={100} />
+            <View style={styles.subtitleAvatarBox}>
+              <Text style={styles.subtitleAvatarEmoji}>
+                {CAYO_EMOJIS[placeArType]?.welcome ?? '🧑'}
+              </Text>
+            </View>
             <View style={styles.subtitleContent}>
               <Text style={styles.subtitleTitle}>Acerca de este lugar</Text>
               <Text style={styles.subtitleText}>{subtitleText}</Text>
@@ -561,8 +585,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245,158,11,0.6)',
   },
   mascotTapArea: { width: 250, height: 250, alignItems: 'center', justifyContent: 'center' },
-  mascotImageWelcome: { width: 215, height: 215 },
-  mascotImagePointing: { width: 230, height: 230 },
+
   mascotPrompt: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -616,7 +639,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.borderLight,
   },
-  subtitleAvatar: { width: 76, height: 76, borderRadius: Radius.lg },
+  subtitleAvatarBox: {
+    width: 76, height: 76, borderRadius: Radius.lg,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  subtitleAvatarEmoji: { fontSize: 38 },
   subtitleContent: { flex: 1, gap: Spacing.xs },
   subtitleTitle: { color: Colors.textPrimary, fontSize: FontSize.sm, fontWeight: FontWeight.bold },
   subtitleText: { color: Colors.textSecondary, fontSize: FontSize.sm, lineHeight: 20 },
