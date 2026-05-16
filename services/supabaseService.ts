@@ -58,22 +58,23 @@ export async function createPlace(place: Omit<TouristPlace, 'id'>): Promise<{ er
 
 export async function updatePlace(id: string, updates: Partial<TouristPlace>): Promise<{ error: string | null }> {
   const row: Record<string, any> = {};
-  if (updates.name) row.name = updates.name;
-  if (updates.shortDescription) row.short_description = updates.shortDescription;
-  if (updates.description) row.description = updates.description;
-  if (updates.category) row.category = updates.category;
+  if (updates.name !== undefined) row.name = updates.name;
+  if (updates.shortDescription !== undefined) row.short_description = updates.shortDescription;
+  if (updates.description !== undefined) row.description = updates.description;
+  if (updates.category !== undefined) row.category = updates.category;
   if (updates.latitude !== undefined) row.latitude = updates.latitude;
   if (updates.longitude !== undefined) row.longitude = updates.longitude;
-  if (updates.address) row.address = updates.address;
+  if (updates.address !== undefined) row.address = updates.address;
   if (updates.rating !== undefined) row.rating = updates.rating;
   if (updates.points !== undefined) row.points = updates.points;
-  if (updates.imageUrl) row.image_url = updates.imageUrl;
-  if (updates.audioText) row.audio_text = updates.audioText;
-  if (updates.arType) row.ar_type = updates.arType;
-  if (updates.badge) row.badge = updates.badge;
-  if (updates.difficulty) row.difficulty = updates.difficulty;
-  if (updates.visitDuration) row.visit_duration = updates.visitDuration;
-  if (updates.tags) row.tags = updates.tags;
+  if (updates.qrCode !== undefined) row.qr_code = updates.qrCode;
+  if (updates.imageUrl !== undefined) row.image_url = updates.imageUrl;
+  if (updates.audioText !== undefined) row.audio_text = updates.audioText;
+  if (updates.arType !== undefined) row.ar_type = updates.arType;
+  if (updates.badge !== undefined) row.badge = updates.badge;
+  if (updates.difficulty !== undefined) row.difficulty = updates.difficulty;
+  if (updates.visitDuration !== undefined) row.visit_duration = updates.visitDuration;
+  if (updates.tags !== undefined) row.tags = updates.tags;
   row.updated_at = new Date().toISOString();
 
   const { error } = await supabase.from('tourist_places').update(row).eq('id', id);
@@ -121,6 +122,51 @@ export async function upsertUserProfile(userId: string, updates: Partial<DBUserP
   const { error } = await supabase
     .from('user_profiles')
     .upsert({ id: userId, ...updates }, { onConflict: 'id' });
+  return { error: error?.message || null };
+}
+
+export async function fetchAdminUsers(): Promise<DBUserProfile[]> {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .order('is_admin', { ascending: false })
+    .order('points', { ascending: false });
+
+  if (error) {
+    console.log('fetchAdminUsers error:', error.message);
+    return [];
+  }
+
+  return (data || []) as DBUserProfile[];
+}
+
+export async function updateAdminUserProfile(
+  userId: string,
+  updates: Partial<DBUserProfile>
+): Promise<{ error: string | null }> {
+  const row: Partial<DBUserProfile> & { updated_at?: string } = {};
+
+  if (updates.username !== undefined) row.username = updates.username;
+  if (updates.email !== undefined) row.email = updates.email;
+  if (updates.points !== undefined) row.points = updates.points;
+  if (updates.visited_places !== undefined) row.visited_places = updates.visited_places;
+  if (updates.scanned_qrs !== undefined) row.scanned_qrs = updates.scanned_qrs;
+  if (updates.unlocked_badges !== undefined) row.unlocked_badges = updates.unlocked_badges;
+  if (updates.join_date !== undefined) row.join_date = updates.join_date;
+  if (updates.avatar_url !== undefined) row.avatar_url = updates.avatar_url;
+  if (updates.is_admin !== undefined) row.is_admin = updates.is_admin;
+  row.updated_at = new Date().toISOString();
+
+  const { error } = await supabase
+    .from('user_profiles')
+    .update(row)
+    .eq('id', userId);
+
+  return { error: error?.message || null };
+}
+
+export async function sendUserPasswordReset(email: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
   return { error: error?.message || null };
 }
 

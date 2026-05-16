@@ -15,12 +15,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { getSupabaseClient } from '@/template';
+import { getSupabaseClient, useAlert } from '@/template';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/constants/theme';
-import { TOURIST_PLACES } from '@/constants/places';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useApp } from '@/hooks/useApp';
-import { useAlert } from '@/template';
 
 const supabase = getSupabaseClient();
 const TAB_BAR_HEIGHT = 90;
@@ -28,7 +26,7 @@ const TAB_BAR_HEIGHT = 90;
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, isAuthenticated, isAdmin, updateUser, currentLevel, nextLevel, progressToNextLevel } = useApp();
+  const { user, isAuthenticated, isAdmin, updateUser, currentLevel, nextLevel, progressToNextLevel, places } = useApp();
   const { showAlert } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
   const [nameInput, setNameInput] = useState(user?.name || '');
@@ -86,8 +84,8 @@ export default function ProfileScreen() {
     );
   }
 
-  const visitedPlaces = TOURIST_PLACES.filter((p) => user.visitedPlaces.includes(p.id));
-  const exploredPercent = Math.round((user.visitedPlaces.length / TOURIST_PLACES.length) * 100);
+  const visitedPlaces = places.filter((p) => user.visitedPlaces.includes(p.id));
+  const exploredPercent = places.length > 0 ? Math.round((user.visitedPlaces.length / places.length) * 100) : 0;
 
   const handleSaveName = () => {
     if (nameInput.trim().length < 2) {
@@ -115,6 +113,7 @@ export default function ProfileScreen() {
   const joinDate = new Date(user.joinDate).toLocaleDateString('es-CO', {
     year: 'numeric', month: 'long', day: 'numeric',
   });
+  const avatarOptions = buildAvatarOptions(user.id);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -205,6 +204,31 @@ export default function ProfileScreen() {
             )}
           </LinearGradient>
 
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Elige tu avatar</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.avatarPickerRow}>
+              {avatarOptions.map((avatarUrl, index) => {
+                const selected = user.avatar === avatarUrl;
+                return (
+                  <TouchableOpacity
+                    key={`${avatarUrl}-${index}`}
+                    style={[styles.avatarOption, selected && styles.avatarOptionSelected]}
+                    onPress={() => updateUser({ avatar: avatarUrl })}
+                    activeOpacity={0.85}
+                  >
+                    <Image source={{ uri: avatarUrl }} style={styles.avatarOptionImage} contentFit="cover" transition={120} />
+                    {selected ? (
+                      <View style={styles.avatarOptionBadge}>
+                        <MaterialIcons name="check" size={14} color="#FFF" />
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <Text style={styles.avatarPickerHint}>Toca un avatar para cambiar tu apariencia en la app.</Text>
+          </View>
+
           {/* Stats Grid */}
           <View style={styles.statsGrid}>
             {[
@@ -233,7 +257,7 @@ export default function ProfileScreen() {
               </View>
               <ProgressBar progress={exploredPercent} gradient={Colors.gradientBlue} height={10} />
               <Text style={styles.progressSubtext}>
-                {user.visitedPlaces.length} de {TOURIST_PLACES.length} lugares visitados
+                {user.visitedPlaces.length} de {places.length} lugares visitados
               </Text>
             </View>
           </View>
@@ -319,6 +343,35 @@ const styles = StyleSheet.create({
   avatarSection: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.xs },
   avatarWrapper: { position: 'relative' },
   avatar: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: Colors.primary },
+  avatarPickerRow: { gap: Spacing.sm, paddingRight: Spacing.md },
+  avatarOption: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    padding: 3,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bgCard,
+  },
+  avatarOptionSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '16',
+  },
+  avatarOptionImage: { width: '100%', height: '100%', borderRadius: 32 },
+  avatarOptionBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.bgPrimary,
+  },
+  avatarPickerHint: { color: Colors.textMuted, fontSize: FontSize.xs },
   levelBadge: {
     position: 'absolute', bottom: -2, right: -2,
     width: 26, height: 26, borderRadius: 13,
@@ -382,3 +435,21 @@ const styles = StyleSheet.create({
   },
   resetText: { color: Colors.danger, fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
 });
+
+function buildAvatarOptions(userId: string) {
+  const variants = [
+    { seed: `${userId}-rio`, background: '1A2035' },
+    { seed: `${userId}-manglar`, background: '0F766E' },
+    { seed: `${userId}-sol`, background: 'B45309' },
+    { seed: `${userId}-costa`, background: '1D4ED8' },
+    { seed: `${userId}-selva`, background: '166534' },
+    { seed: `${userId}-historia`, background: '7C2D12' },
+    { seed: `${userId}-noche`, background: '312E81' },
+    { seed: `${userId}-brisa`, background: '0F172A' },
+  ];
+
+  return variants.map(
+    ({ seed, background }) =>
+      `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}&backgroundColor=${background}`
+  );
+}

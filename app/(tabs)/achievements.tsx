@@ -10,7 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/constants/theme';
-import { TOURIST_PLACES, LEVELS } from '@/constants/places';
+import { LEVELS } from '@/constants/places';
 import { AchievementCard } from '@/components/feature/AchievementCard';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useApp } from '@/hooks/useApp';
@@ -18,7 +18,7 @@ import { useApp } from '@/hooks/useApp';
 const { width } = Dimensions.get('window');
 const TAB_BAR_HEIGHT = 90;
 
-const ACHIEVEMENTS = [
+const buildAchievements = (totalPlaces: number) => [
   {
     id: 'first-visit',
     title: 'Primera Visita',
@@ -80,7 +80,7 @@ const ACHIEVEMENTS = [
     icon: '⚡',
     points: 400,
     gradient: ['#F59E0B', '#EF4444'],
-    requiredVisits: Math.ceil(TOURIST_PLACES.length / 2),
+    requiredVisits: Math.ceil(totalPlaces / 2),
   },
   {
     id: 'full-explorer',
@@ -89,20 +89,21 @@ const ACHIEVEMENTS = [
     icon: '🏆',
     points: 1000,
     gradient: ['#F59E0B', '#8B5CF6'],
-    requiredVisits: TOURIST_PLACES.length,
+    requiredVisits: totalPlaces,
   },
 ];
 
 export default function AchievementsScreen() {
   const insets = useSafeAreaInsets();
-  const { user, currentLevel, nextLevel, progressToNextLevel } = useApp();
+  const { user, currentLevel, nextLevel, progressToNextLevel, places } = useApp();
 
   // Safe defaults for unauthenticated users
   const visitedPlaces = user?.visitedPlaces ?? [];
   const scannedQRs = user?.scannedQRs ?? [];
   const userPoints = user?.points ?? 0;
+  const achievements = buildAchievements(places.length);
 
-  const resolvedAchievements = ACHIEVEMENTS.map((a) => {
+  const resolvedAchievements = achievements.map((a) => {
     let unlocked = false;
     if (a.requiredVisits) {
       unlocked = visitedPlaces.length >= a.requiredVisits;

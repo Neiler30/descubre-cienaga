@@ -44,6 +44,7 @@ export interface AppContextType {
   setNearbyPlaces: (places: TouristPlace[]) => void;
   isLoading: boolean;
   refreshProfile: () => Promise<void>;
+  refreshPlaces: () => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -57,6 +58,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [places, setPlaces] = useState<TouristPlace[]>(TOURIST_PLACES);
 
+  const refreshPlaces = useCallback(async () => {
+    const dbPlaces = await fetchPlaces();
+    setPlaces(dbPlaces.length > 0 ? dbPlaces : TOURIST_PLACES);
+  }, []);
+
   useEffect(() => {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -69,13 +75,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Load places from DB
-    fetchPlaces().then((dbPlaces) => {
-      if (dbPlaces.length > 0) setPlaces(dbPlaces);
-    });
+    refreshPlaces();
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [refreshPlaces]);
 
   const loadProfile = async (authU: any) => {
     setIsLoading(true);
@@ -195,6 +198,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setNearbyPlaces,
         isLoading,
         refreshProfile,
+        refreshPlaces,
       }}
     >
       {children}

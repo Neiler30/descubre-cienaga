@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -13,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
-import { TOURIST_PLACES } from '@/constants/places';
+import { TouristPlace } from '@/constants/places';
 import { useApp } from '@/hooks/useApp';
 import { useNotifications } from '@/hooks/useNotifications';
 import { GradientButton } from '@/components/ui/GradientButton';
@@ -26,11 +27,13 @@ export default function ScannerScreen() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-  const [scannedPlace, setScannedPlace] = useState<(typeof TOURIST_PLACES)[0] | null>(null);
+  const [scannedPlace, setScannedPlace] = useState<TouristPlace | null>(null);
   const [pointsEarned, setPointsEarned] = useState(0);
   const [wasAlreadyScanned, setWasAlreadyScanned] = useState(false);
+  const [isLaunchingAR, setIsLaunchingAR] = useState(false);
   const [scanLineAnim] = useState(new Animated.Value(0));
-  const { isAuthenticated, markQRScanned, isQRScanned, user } = useApp();
+  const scanLockRef = useRef(false);
+  const { isAuthenticated, markQRScanned, isQRScanned, places } = useApp();
   const { sendQRNotification } = useNotifications();
 
   useEffect(() => {
@@ -42,7 +45,7 @@ export default function ScannerScreen() {
     );
     animation.start();
     return () => animation.stop();
-  }, []);
+  }, [scanLineAnim]);
 
   const scanLineTranslate = scanLineAnim.interpolate({
     inputRange: [0, 1],
@@ -50,11 +53,22 @@ export default function ScannerScreen() {
   });
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
-    if (scanned) return;
+    if (scanned || scanLockRef.current) return;
+    scanLockRef.current = true;
     setScanned(true);
+    setPointsEarned(0);
+    setWasAlreadyScanned(false);
+    setIsLaunchingAR(false);
 
-    const place = TOURIST_PLACES.find((p) => p.qrCode === data);
+    const normalizedData = normalizeQRValue(data);
+    const place = places.find((p) => {
+      const placeQR = normalizeQRValue(p.qrCode);
+      return normalizedData === placeQR || normalizedData.includes(placeQR) || placeQR.includes(normalizedData);
+    });
     if (place) {
+      setScannedPlace(place);
+      setIsLaunchingAR(true);
+
       let earned = 0;
       let already = false;
 
@@ -70,14 +84,28 @@ export default function ScannerScreen() {
       setPointsEarned(earned);
       setWasAlreadyScanned(already);
       sendQRNotification(place.name);
-      setScannedPlace(place);
+
+      setTimeout(() => {
+        router.replace({
+          pathname: '/ar/[id]',
+          params: {
+            id: place.id,
+            autoStart: '1',
+            fromScan: '1',
+            points: String(earned),
+            already: already ? '1' : '0',
+          },
+        } as any);
+      }, 850);
     } else {
       setScannedPlace(null);
+      scanLockRef.current = false;
     }
   };
 
   const handleSimulateScan = () => {
-    const randomPlace = TOURIST_PLACES[Math.floor(Math.random() * TOURIST_PLACES.length)];
+    const randomPlace = places[Math.floor(Math.random() * places.length)];
+    if (!randomPlace) return;
     handleBarCodeScanned({ data: randomPlace.qrCode });
   };
 
@@ -90,7 +118,14 @@ export default function ScannerScreen() {
   };
 
   const handleClose = () => router.back();
-  const handleRescan = () => { setScanned(false); setScannedPlace(null); };
+  const handleRescan = () => {
+    scanLockRef.current = false;
+    setScanned(false);
+    setScannedPlace(null);
+    setIsLaunchingAR(false);
+    setPointsEarned(0);
+    setWasAlreadyScanned(false);
+  };
 
   if (!permission) return <View style={styles.container} />;
 
@@ -180,7 +215,33 @@ export default function ScannerScreen() {
         <View style={styles.resultOverlay}>
           <LinearGradient colors={[Colors.bgDeep, Colors.bgPrimary]} style={StyleSheet.absoluteFill} />
 
-          {scannedPlace ? (
+          {scannedPlace && isLaunchingAR ? (
+            <View style={[styles.resultCard, { paddingBottom: insets.bottom + Spacing.md }]}>
+              <LinearGradient
+                colors={['rgba(59,130,246,0.22)', 'rgba(139,92,246,0.16)']}
+                style={styles.launchBanner}
+              >
+                <View style={styles.launchIcon}>
+                  <MaterialIcons name="view-in-ar" size={46} color="#C4B5FD" />
+                </View>
+                <Text style={styles.launchTitle}>QR valido</Text>
+                <Text style={styles.launchPlace}>{scannedPlace.name}</Text>
+                <Text style={styles.launchText}>
+                  {wasAlreadyScanned
+                    ? 'Ya conoces este lugar. Abriendo de nuevo la experiencia AR.'
+                    : 'Te llevaremos enseguida a la experiencia AR de este lugar.'}
+                </Text>
+                <View style={styles.launchPointsChip}>
+                  <MaterialIcons name="stars" size={18} color={Colors.gold} />
+                  <Text style={styles.launchPointsText}>+{pointsEarned} puntos</Text>
+                </View>
+                <View style={styles.launchLoaderRow}>
+                  <ActivityIndicator color={Colors.primary} />
+                  <Text style={styles.launchLoaderText}>Iniciando experiencia...</Text>
+                </View>
+              </LinearGradient>
+            </View>
+          ) : scannedPlace ? (
             <View style={[styles.resultCard, { paddingBottom: insets.bottom + Spacing.md }]}>
               <LinearGradient
                 colors={['rgba(16,185,129,0.2)', 'rgba(59,130,246,0.1)']}
@@ -317,4 +378,62 @@ const styles = StyleSheet.create({
   errorIcon: { marginBottom: Spacing.sm },
   errorTitle: { color: Colors.textPrimary, fontSize: FontSize.xxl, fontWeight: FontWeight.bold },
   errorText: { color: Colors.textSecondary, fontSize: FontSize.sm, textAlign: 'center', lineHeight: 22 },
+  launchBanner: {
+    width: '100%',
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.primary + '44',
+  },
+  launchIcon: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.28)',
+  },
+  launchTitle: { color: '#C4B5FD', fontSize: FontSize.xxl, fontWeight: FontWeight.extrabold },
+  launchPlace: { color: Colors.textPrimary, fontSize: FontSize.xl, fontWeight: FontWeight.bold, textAlign: 'center' },
+  launchText: { color: Colors.textSecondary, fontSize: FontSize.sm, textAlign: 'center', lineHeight: 22 },
+  launchPointsChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.gold + '22',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.gold + '44',
+  },
+  launchPointsText: { color: Colors.gold, fontSize: FontSize.md, fontWeight: FontWeight.bold },
+  launchLoaderRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.xs },
+  launchLoaderText: { color: Colors.primary, fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
 });
+
+function normalizeQRValue(value: string) {
+  let normalized = value.trim();
+
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      const decoded = decodeURIComponent(normalized);
+      if (decoded === normalized) break;
+      normalized = decoded;
+    } catch {
+      break;
+    }
+  }
+
+  try {
+    if (/^https?:\/\//i.test(normalized)) {
+      const url = new URL(normalized);
+      const dataParam = url.searchParams.get('data');
+      if (dataParam) normalized = dataParam;
+    }
+  } catch {}
+
+  return normalized.trim().replace(/\s+/g, '').toUpperCase();
+}

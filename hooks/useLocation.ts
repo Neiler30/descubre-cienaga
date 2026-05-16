@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as Location from 'expo-location';
-import { TOURIST_PLACES, TouristPlace } from '@/constants/places';
+import { TouristPlace } from '@/constants/places';
 import { APP_CONFIG } from '@/constants/config';
+import { useApp } from '@/hooks/useApp';
 
 interface LocationState {
   latitude: number;
@@ -24,6 +25,7 @@ const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number): nu
 };
 
 export function useLocation() {
+  const { places } = useApp();
   const [location, setLocation] = useState<LocationState | null>(null);
   const [hasPermission, setHasPermission] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,14 +44,14 @@ export function useLocation() {
   }, []);
 
   const updateNearby = useCallback((loc: LocationState) => {
-    const nearby = TOURIST_PLACES.map((place) => ({
+    const nearby = places.map((place) => ({
       ...place,
       distance: getDistance(loc.latitude, loc.longitude, place.latitude, place.longitude),
     }))
       .filter((place) => place.distance <= APP_CONFIG.proximityRadius * 3)
       .sort((a, b) => a.distance - b.distance);
     setNearbyPlaces(nearby);
-  }, []);
+  }, [places]);
 
   useEffect(() => {
     let subscription: Location.LocationSubscription | null = null;
@@ -96,6 +98,12 @@ export function useLocation() {
       subscription?.remove();
     };
   }, [requestPermission, updateNearby]);
+
+  useEffect(() => {
+    if (location) {
+      updateNearby(location);
+    }
+  }, [location, updateNearby]);
 
   const getDistanceTo = useCallback(
     (latitude: number, longitude: number): number | null => {

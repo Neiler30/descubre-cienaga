@@ -15,7 +15,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/constants/theme';
-import { TOURIST_PLACES, TouristPlace, getCategoryColor, CATEGORIES, PlaceCategory } from '@/constants/places';
+import { TouristPlace, getCategoryColor, CATEGORIES, PlaceCategory } from '@/constants/places';
 import { CategoryBadge } from '@/components/ui/CategoryBadge';
 import { StarRating } from '@/components/ui/StarRating';
 import { GradientButton } from '@/components/ui/GradientButton';
@@ -174,7 +174,7 @@ function WebMapFallback({
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { isVisited } = useApp();
+  const { isVisited, places } = useApp();
   const { location, getDistanceTo, formatDistance } = useLocation();
   const [selectedPlace, setSelectedPlace] = useState<TouristPlace | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<PlaceCategory | 'all'>('all');
@@ -182,8 +182,8 @@ export default function MapScreen() {
 
   const filteredPlaces =
     selectedCategory === 'all'
-      ? TOURIST_PLACES
-      : TOURIST_PLACES.filter((p) => p.category === selectedCategory);
+      ? places
+      : places.filter((p) => p.category === selectedCategory);
 
   const handleMarkerPress = (place: TouristPlace) => {
     setSelectedPlace(place);

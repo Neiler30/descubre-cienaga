@@ -15,7 +15,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/constants/theme';
-import { TOURIST_PLACES } from '@/constants/places';
 import { CategoryBadge } from '@/components/ui/CategoryBadge';
 import { StarRating } from '@/components/ui/StarRating';
 import { GradientButton } from '@/components/ui/GradientButton';
@@ -29,11 +28,11 @@ export default function PlaceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { isAuthenticated, isVisited, markPlaceVisited } = useApp();
+  const { isAuthenticated, isVisited, markPlaceVisited, places } = useApp();
   const scrollY = useRef(new Animated.Value(0)).current;
   const fadeIn = useRef(new Animated.Value(0)).current;
 
-  const place = TOURIST_PLACES.find((p) => p.id === id);
+  const place = places.find((p) => p.id === id);
 
   useEffect(() => {
     if (place && !isVisited(place.id)) {
